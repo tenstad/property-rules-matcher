@@ -5,15 +5,8 @@ import (
 	"slices"
 )
 
-type Operator int
-
-const (
-	Equal Operator = iota
-)
-
 type Condition struct {
-	Operator Operator
-	Value    any
+	Value any
 }
 
 type Conditions struct {
