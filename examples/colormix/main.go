@@ -57,7 +57,7 @@ func main() {
 					Outcome: "rainbow",
 					Conditions: map[string]match.Conditions{
 						"special-sauce": {Any: []match.Condition{
-							{Value: "unicorn-sprinkles"},
+							{Value: "unicorn sparkles"},
 							{Value: "magic"},
 						}},
 					},
@@ -84,7 +84,7 @@ func main() {
 		{
 			"color-a":       "black",
 			"color-b":       "red",
-			"special-sauce": "unicorn-sprinkles",
+			"special-sauce": "unicorn sparkles",
 		},
 		{
 			"color-a": "black",
