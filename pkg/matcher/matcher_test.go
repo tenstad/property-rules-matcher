@@ -11,7 +11,7 @@ import (
 func TestNil(t *testing.T) {
 	t.Parallel()
 
-	matcher := match.NewMatcherBuilder[*struct{}]().
+	matcher, err := match.NewMatcherBuilder[*struct{}]().
 		AddRules(
 			[]match.Rule[*struct{}]{
 				{
@@ -32,6 +32,9 @@ func TestNil(t *testing.T) {
 				},
 			},
 		).Build()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	for i, tt := range []struct {
 		object   map[string]interface{}
@@ -56,7 +59,10 @@ func TestNil(t *testing.T) {
 		{object: map[string]interface{}{"a": nil}, outcomes: nil},
 		{object: map[string]interface{}{"b": nil}, outcomes: nil},
 	} {
-		outcomes := matcher.Match(tt.object)
+		outcomes, err := matcher.Match(tt.object)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
 		sort := cmpopts.SortSlices(func(a, b string) bool { return a < b })
 		if diff := cmp.Diff(tt.outcomes, outcomes, sort); diff != "" {
 			t.Fatalf("test case %v failed with diff:\n%s", i, diff)
@@ -67,17 +73,17 @@ func TestNil(t *testing.T) {
 func TestValueTypes(t *testing.T) {
 	t.Parallel()
 
-	matcher := match.NewMatcherBuilder[string]().
+	matcher, err := match.NewMatcherBuilder[string]().
 		AddRules(
 			[]match.Rule[string]{
 				{
 					Outcome: "alpha", Conditions: map[string]match.Conditions{
-						"a": {Any: []match.Condition{{Value: ""}}},
+						"a": {Any: []match.Condition{{Value: nil}}},
 					},
 				},
 				{
 					Outcome: "bravo", Conditions: map[string]match.Conditions{
-						"a": {Any: []match.Condition{{Value: nil}}},
+						"a": {Any: []match.Condition{{Value: false}}},
 					},
 				},
 				{
@@ -86,48 +92,31 @@ func TestValueTypes(t *testing.T) {
 					},
 				},
 				{
-					Outcome: "delta", Conditions: map[string]match.Conditions{
-						"a": {Any: []match.Condition{{Value: false}}},
-					},
-				},
-				{
-					Outcome: "echo", Conditions: map[string]match.Conditions{
-						"a": {Any: []match.Condition{{Value: struct{}{}}}},
-					},
-				},
-				{
 					Outcome: "foxtrot", Conditions: map[string]match.Conditions{
-						"a": {Any: []match.Condition{{Value: &struct{}{}}}},
-					},
-				},
-				{
-					Outcome: "golf", Conditions: map[string]match.Conditions{
-						"a": {Any: []match.Condition{{Value: struct{ x string }{x: "x"}}}},
-					},
-				},
-				{
-					Outcome: "hotel", Conditions: map[string]match.Conditions{
-						"a": {Any: []match.Condition{{Value: &struct{ x string }{x: "x"}}}},
+						"a": {Any: []match.Condition{{Value: ""}}},
 					},
 				},
 			},
 		).Build()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	for i, tt := range []struct {
 		object   map[string]interface{}
 		outcomes []string
 	}{
 		{
-			object:   map[string]interface{}{"a": ""},
+			object:   map[string]interface{}{"a": nil},
 			outcomes: []string{"alpha"},
 		},
 		{
-			object:   map[string]interface{}{"a": "x"},
-			outcomes: nil,
+			object:   map[string]interface{}{"a": false},
+			outcomes: []string{"bravo"},
 		},
 		{
-			object:   map[string]interface{}{"a": nil},
-			outcomes: []string{"bravo"},
+			object:   map[string]interface{}{"a": true},
+			outcomes: nil,
 		},
 		{
 			object:   map[string]interface{}{"a": 0},
@@ -138,37 +127,127 @@ func TestValueTypes(t *testing.T) {
 			outcomes: nil,
 		},
 		{
-			object:   map[string]interface{}{"a": false},
-			outcomes: []string{"delta"},
-		},
-		{
-			object:   map[string]interface{}{"a": true},
-			outcomes: nil,
-		},
-		{
-			object:   map[string]interface{}{"a": struct{}{}},
-			outcomes: []string{"echo"},
-		},
-		{
-			object:   map[string]interface{}{"a": &struct{}{}},
+			object:   map[string]interface{}{"a": ""},
 			outcomes: []string{"foxtrot"},
 		},
 		{
-			object:   map[string]interface{}{"a": struct{ x string }{x: "x"}},
-			outcomes: []string{"golf"},
-		},
-		{
-			object:   map[string]interface{}{"a": struct{ x string }{}},
-			outcomes: nil,
-		},
-		{
-			object:   map[string]interface{}{"a": &struct{ x string }{x: "x"}},
+			object:   map[string]interface{}{"a": "x"},
 			outcomes: nil,
 		},
 	} {
-		outcomes := matcher.Match(tt.object)
+		outcomes, err := matcher.Match(tt.object)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
 		sort := cmpopts.SortSlices(func(a, b string) bool { return a < b })
 		if diff := cmp.Diff(tt.outcomes, outcomes, sort); diff != "" {
+			t.Fatalf("test case %v failed with diff:\n%s", i, diff)
+		}
+	}
+}
+
+func TestInvalidRuleTypes(t *testing.T) {
+	t.Parallel()
+
+	str := ""
+
+	for i, tt := range []struct {
+		rules []match.Rule[string]
+		err   string
+	}{
+		{
+			rules: []match.Rule[string]{{
+				Outcome: "alpha", Conditions: map[string]match.Conditions{
+					"a": {Any: []match.Condition{{Value: int32(0)}}},
+				},
+			}},
+			err: "invalid value type: int32",
+		},
+		{
+			rules: []match.Rule[string]{{
+				Outcome: "alpha", Conditions: map[string]match.Conditions{
+					"a": {Any: []match.Condition{{Value: &str}}},
+				},
+			}},
+			err: "invalid value type: *string",
+		},
+		{
+			rules: []match.Rule[string]{{
+				Outcome: "alpha", Conditions: map[string]match.Conditions{
+					"a": {Any: []match.Condition{{Value: []string{}}}},
+				},
+			}},
+			err: "invalid value type: []string",
+		},
+		{
+			rules: []match.Rule[string]{{
+				Outcome: "alpha", Conditions: map[string]match.Conditions{
+					"a": {Any: []match.Condition{{Value: struct{}{}}}},
+				},
+			}},
+			err: "invalid value type: struct {}",
+		},
+		{
+			rules: []match.Rule[string]{{
+				Outcome: "alpha", Conditions: map[string]match.Conditions{
+					"a": {Any: []match.Condition{{Value: &struct{}{}}}},
+				},
+			}},
+			err: "invalid value type: *struct {}",
+		},
+		{
+			rules: []match.Rule[string]{{
+				Outcome: "alpha", Conditions: map[string]match.Conditions{
+					"a": {Any: []match.Condition{{Value: map[string]string{"a": "b"}}}},
+				},
+			}},
+			err: "invalid value type: map[string]string",
+		},
+	} {
+		_, err := match.NewMatcherBuilder[string]().
+			AddRules(tt.rules).Build()
+		if diff := cmp.Diff(tt.err, err.Error()); diff != "" {
+			t.Fatalf("test case %v failed with diff:\n%s", i, diff)
+		}
+	}
+}
+
+func TestInvalidObjectTypes(t *testing.T) {
+	t.Parallel()
+
+	matcher, err := match.NewMatcherBuilder[string]().
+		AddRules(
+			[]match.Rule[string]{
+				{
+					Outcome: "alpha", Conditions: map[string]match.Conditions{
+						"a": {Any: []match.Condition{{Value: nil}}},
+					},
+				},
+			},
+		).Build()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	for i, tt := range []struct {
+		object map[string]interface{}
+		err    string
+	}{
+		{
+			object: map[string]interface{}{"a": []string{}},
+			err:    "invalid value type: []string",
+		},
+		{
+			object: map[string]interface{}{"a": struct{}{}},
+			err:    "invalid value type: struct {}",
+		},
+		{
+			object: map[string]interface{}{"a": int32(0)},
+			err:    "invalid value type: int32",
+		},
+	} {
+		_, err := matcher.Match(tt.object)
+		if diff := cmp.Diff(tt.err, err.Error()); diff != "" {
 			t.Fatalf("test case %v failed with diff:\n%s", i, diff)
 		}
 	}
@@ -177,7 +256,7 @@ func TestValueTypes(t *testing.T) {
 func TestManyAnyValues(t *testing.T) {
 	t.Parallel()
 
-	matcher := match.NewMatcherBuilder[string]().
+	matcher, err := match.NewMatcherBuilder[string]().
 		AddRules(
 			[]match.Rule[string]{
 				{
@@ -218,6 +297,9 @@ func TestManyAnyValues(t *testing.T) {
 				},
 			},
 		).Build()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	for i, tt := range []struct {
 		object   map[string]interface{}
@@ -244,7 +326,10 @@ func TestManyAnyValues(t *testing.T) {
 		{object: map[string]interface{}{"b": "y"}, outcomes: nil},
 		{object: map[string]interface{}{"b": "z"}, outcomes: nil},
 	} {
-		outcomes := matcher.Match(tt.object)
+		outcomes, err := matcher.Match(tt.object)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
 		sort := cmpopts.SortSlices(func(a, b string) bool { return a < b })
 		if diff := cmp.Diff(tt.outcomes, outcomes, sort); diff != "" {
 			t.Fatalf("test case %v failed with diff:\n%s", i, diff)
@@ -255,7 +340,7 @@ func TestManyAnyValues(t *testing.T) {
 func TestListOutcome(t *testing.T) {
 	t.Parallel()
 
-	matcher := match.NewMatcherBuilder[[]string]().
+	matcher, err := match.NewMatcherBuilder[[]string]().
 		AddRules(
 			[]match.Rule[[]string]{
 				{
@@ -280,6 +365,9 @@ func TestListOutcome(t *testing.T) {
 				},
 			},
 		).Build()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	for i, tt := range []struct {
 		object   map[string]interface{}
@@ -299,7 +387,10 @@ func TestListOutcome(t *testing.T) {
 			outcomes: [][]string{{"alpha", "charlie"}, {"bravo", "alpha"}},
 		},
 	} {
-		outcomes := matcher.Match(tt.object)
+		outcomes, err := matcher.Match(tt.object)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
 		sort := cmpopts.SortSlices(func(a, b []string) bool { return a[0] < b[0] })
 		if diff := cmp.Diff(tt.outcomes, outcomes, sort); diff != "" {
 			t.Fatalf("test case %v failed with diff:\n%s", i, diff)

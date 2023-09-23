@@ -1,7 +1,9 @@
 package match
 
 import (
+	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 )
 
@@ -19,12 +21,12 @@ type Rule[T any] struct {
 }
 
 type Matcher[T any] interface {
-	Match(object map[string]any) []T
+	Match(object map[string]any) ([]T, error)
 }
 
 type MatcherBuilder[T any] interface {
 	AddRules(rules []Rule[T]) MatcherBuilder[T]
-	Build() Matcher[T]
+	Build() (Matcher[T], error)
 }
 
 func NewMatcherBuilder[T any]() MatcherBuilder[T] {
@@ -40,7 +42,7 @@ func (b *treeBuilder[T]) AddRules(rules []Rule[T]) MatcherBuilder[T] {
 	return b
 }
 
-func (b *treeBuilder[T]) Build() Matcher[T] {
+func (b *treeBuilder[T]) Build() (Matcher[T], error) {
 	var outcomes []T
 	for i := len(b.rules) - 1; i >= 0; i-- {
 		if len(b.rules[i].Conditions) == 0 {
@@ -49,13 +51,18 @@ func (b *treeBuilder[T]) Build() Matcher[T] {
 		}
 	}
 
+	children, err := b.children()
+	if err != nil {
+		return nil, err
+	}
+
 	return &node[T]{
 		outcomes: outcomes,
-		children: b.children(),
-	}
+		children: children,
+	}, nil
 }
 
-func (b *treeBuilder[T]) children() map[string]map[any]Matcher[T] {
+func (b *treeBuilder[T]) children() (map[string]map[any]Matcher[T], error) {
 	var children map[string]map[any]Matcher[T]
 	for len(b.rules) > 0 {
 		prop := b.groupingProperty()
@@ -70,9 +77,13 @@ func (b *treeBuilder[T]) children() map[string]map[any]Matcher[T] {
 						Conditions: maps.Clone(b.rules[i].Conditions),
 					}
 
+					value, err := validateValue(condition.Value)
+					if err != nil {
+						return nil, err
+					}
 					builder := groups[condition.Value]
 					builder.rules = append(builder.rules, rule)
-					groups[condition.Value] = builder
+					groups[value] = builder
 				}
 				b.rules = slices.Delete(b.rules, i, i+1)
 			}
@@ -83,10 +94,23 @@ func (b *treeBuilder[T]) children() map[string]map[any]Matcher[T] {
 		}
 		children[prop] = make(map[any]Matcher[T])
 		for value, rules := range groups {
-			children[prop][value] = rules.Build()
+			child, err := rules.Build()
+			if err != nil {
+				return nil, err
+			}
+			children[prop][value] = child
 		}
 	}
-	return children
+	return children, nil
+}
+
+func validateValue(value any) (any, error) {
+	switch value := value.(type) {
+	case nil, bool, int, string:
+		return value, nil
+	default:
+		return nil, fmt.Errorf("invalid value type: %v", reflect.TypeOf(value))
+	}
 }
 
 func (b *treeBuilder[T]) groupingProperty() string {
@@ -103,14 +127,22 @@ type node[T any] struct {
 	children map[string]map[any]Matcher[T]
 }
 
-func (n *node[T]) Match(object map[string]any) []T {
+func (n *node[T]) Match(object map[string]any) ([]T, error) {
 	outcomes := n.outcomes
 	for property, children := range n.children {
 		if value, ok := object[property]; ok {
+			value, err := validateValue(value)
+			if err != nil {
+				return nil, err
+			}
 			if child, ok := children[value]; ok {
-				outcomes = append(outcomes, child.Match(object)...)
+				o, err := child.Match(object)
+				if err != nil {
+					return nil, err
+				}
+				outcomes = append(outcomes, o...)
 			}
 		}
 	}
-	return outcomes
+	return outcomes, nil
 }
