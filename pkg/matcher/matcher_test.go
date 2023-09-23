@@ -274,14 +274,12 @@ func TestManyAnyValues(t *testing.T) {
 							{Value: "x"},
 							{Value: "y"},
 							{Value: "z"},
-						},
-						},
+						}},
 						"b": {Any: []match.Condition{
 							{Value: "x"},
 							{Value: "y"},
 							{Value: "z"},
-						},
-						},
+						}},
 					},
 				},
 				{
@@ -290,13 +288,11 @@ func TestManyAnyValues(t *testing.T) {
 						"a": {Any: []match.Condition{
 							{Value: "x"},
 							{Value: "y"},
-						},
-						},
+						}},
 						"b": {Any: []match.Condition{
 							{Value: "x"},
 							{Value: "y"},
-						},
-						},
+						}},
 					},
 				},
 			},
