@@ -17,17 +17,13 @@ func TestNil(t *testing.T) {
 				{
 					Outcome: nil,
 					Conditions: map[string]match.Conditions{
-						"a": {
-							Any: []match.Condition{
-								{Value: "x"},
-								{Value: nil},
-							},
-						},
-						"b": {
-							Any: []match.Condition{
-								{Value: nil},
-							},
-						},
+						"a": {Any: []match.Condition{
+							{Value: "x"},
+							{Value: nil},
+						}},
+						"b": {Any: []match.Condition{
+							{Value: nil},
+						}},
 					},
 				},
 			},
@@ -54,10 +50,10 @@ func TestNil(t *testing.T) {
 			},
 			outcomes: []*struct{}{nil},
 		},
-		{object: map[string]interface{}{"a": "x", "b": "x"}, outcomes: nil},
-		{object: map[string]interface{}{"a": "x"}, outcomes: nil},
-		{object: map[string]interface{}{"a": nil}, outcomes: nil},
-		{object: map[string]interface{}{"b": nil}, outcomes: nil},
+		{outcomes: nil, object: map[string]interface{}{"a": "x", "b": "x"}},
+		{outcomes: nil, object: map[string]interface{}{"a": "x"}},
+		{outcomes: nil, object: map[string]interface{}{"a": nil}},
+		{outcomes: nil, object: map[string]interface{}{"b": nil}},
 	} {
 		outcomes, err := matcher.Match(tt.object)
 		if err != nil {
@@ -262,36 +258,32 @@ func TestManyAnyValues(t *testing.T) {
 				{
 					Outcome: "alpha",
 					Conditions: map[string]match.Conditions{
-						"a": {
-							Any: []match.Condition{
-								{Value: "x"},
-								{Value: "y"},
-								{Value: "z"},
-							},
+						"a": {Any: []match.Condition{
+							{Value: "x"},
+							{Value: "y"},
+							{Value: "z"},
 						},
-						"b": {
-							Any: []match.Condition{
-								{Value: "x"},
-								{Value: "y"},
-								{Value: "z"},
-							},
+						},
+						"b": {Any: []match.Condition{
+							{Value: "x"},
+							{Value: "y"},
+							{Value: "z"},
+						},
 						},
 					},
 				},
 				{
 					Outcome: "bravo",
 					Conditions: map[string]match.Conditions{
-						"a": {
-							Any: []match.Condition{
-								{Value: "x"},
-								{Value: "y"},
-							},
+						"a": {Any: []match.Condition{
+							{Value: "x"},
+							{Value: "y"},
 						},
-						"b": {
-							Any: []match.Condition{
-								{Value: "x"},
-								{Value: "y"},
-							},
+						},
+						"b": {Any: []match.Condition{
+							{Value: "x"},
+							{Value: "y"},
+						},
 						},
 					},
 				},
@@ -319,12 +311,12 @@ func TestManyAnyValues(t *testing.T) {
 			},
 			outcomes: []string{"alpha"},
 		},
-		{object: map[string]interface{}{"a": "x"}, outcomes: nil},
-		{object: map[string]interface{}{"a": "y"}, outcomes: nil},
-		{object: map[string]interface{}{"a": "z"}, outcomes: nil},
-		{object: map[string]interface{}{"b": "x"}, outcomes: nil},
-		{object: map[string]interface{}{"b": "y"}, outcomes: nil},
-		{object: map[string]interface{}{"b": "z"}, outcomes: nil},
+		{outcomes: nil, object: map[string]interface{}{"a": "x"}},
+		{outcomes: nil, object: map[string]interface{}{"a": "y"}},
+		{outcomes: nil, object: map[string]interface{}{"a": "z"}},
+		{outcomes: nil, object: map[string]interface{}{"b": "x"}},
+		{outcomes: nil, object: map[string]interface{}{"b": "y"}},
+		{outcomes: nil, object: map[string]interface{}{"b": "z"}},
 	} {
 		outcomes, err := matcher.Match(tt.object)
 		if err != nil {
@@ -346,21 +338,17 @@ func TestListOutcome(t *testing.T) {
 				{
 					Outcome: []string{"alpha", "charlie"},
 					Conditions: map[string]match.Conditions{
-						"a": {
-							Any: []match.Condition{
-								{Value: "x"},
-							},
-						},
+						"a": {Any: []match.Condition{
+							{Value: "x"},
+						}},
 					},
 				},
 				{
 					Outcome: []string{"bravo", "alpha"},
 					Conditions: map[string]match.Conditions{
-						"b": {
-							Any: []match.Condition{
-								{Value: "x"},
-							},
-						},
+						"b": {Any: []match.Condition{
+							{Value: "x"},
+						}},
 					},
 				},
 			},
