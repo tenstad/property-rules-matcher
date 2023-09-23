@@ -88,7 +88,7 @@ func TestValueTypes(t *testing.T) {
 					},
 				},
 				{
-					Outcome: "foxtrot", Conditions: map[string]match.Conditions{
+					Outcome: "delta", Conditions: map[string]match.Conditions{
 						"a": {Any: []match.Condition{{Value: ""}}},
 					},
 				},
@@ -124,7 +124,7 @@ func TestValueTypes(t *testing.T) {
 		},
 		{
 			object:   map[string]interface{}{"a": ""},
-			outcomes: []string{"foxtrot"},
+			outcomes: []string{"delta"},
 		},
 		{
 			object:   map[string]interface{}{"a": "x"},
