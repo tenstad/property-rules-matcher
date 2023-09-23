@@ -104,15 +104,6 @@ func (b *treeBuilder[T]) children() (map[string]map[any]Matcher[T], error) {
 	return children, nil
 }
 
-func validateValue(value any) (any, error) {
-	switch value := value.(type) {
-	case nil, bool, int, string:
-		return value, nil
-	default:
-		return nil, fmt.Errorf("invalid value type: %v", reflect.TypeOf(value))
-	}
-}
-
 func (b *treeBuilder[T]) groupingProperty() string {
 	for _, rule := range b.rules {
 		for prop := range rule.Conditions {
@@ -145,4 +136,13 @@ func (n *node[T]) Match(object map[string]any) ([]T, error) {
 		}
 	}
 	return outcomes, nil
+}
+
+func validateValue(value any) (any, error) {
+	switch value := value.(type) {
+	case nil, bool, int, string:
+		return value, nil
+	default:
+		return nil, fmt.Errorf("invalid value type: %v", reflect.TypeOf(value))
+	}
 }

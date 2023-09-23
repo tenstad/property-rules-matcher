@@ -26,6 +26,12 @@ func TestNil(t *testing.T) {
 						}},
 					},
 				},
+				{
+					Outcome: nil,
+					Conditions: map[string]match.Conditions{
+						"c": {Any: nil},
+					},
+				},
 			},
 		).Build()
 	if err != nil {
@@ -49,6 +55,12 @@ func TestNil(t *testing.T) {
 				"b": nil,
 			},
 			outcomes: []*struct{}{nil},
+		},
+		{
+			object: map[string]interface{}{
+				"c": "x",
+			},
+			outcomes: nil,
 		},
 		{outcomes: nil, object: map[string]interface{}{"a": "x", "b": "x"}},
 		{outcomes: nil, object: map[string]interface{}{"a": "x"}},
