@@ -140,7 +140,7 @@ func (n *node[T]) Match(object map[string]any) ([]T, error) {
 
 func validateValue(value any) (any, error) {
 	switch value := value.(type) {
-	case nil, bool, int, string:
+	case nil, bool, int, float64, string:
 		return value, nil
 	default:
 		return nil, fmt.Errorf("invalid value type: %v", reflect.TypeOf(value))
